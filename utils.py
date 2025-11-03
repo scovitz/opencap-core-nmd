@@ -1038,6 +1038,78 @@ def getMainSettings(trial_id):
                     return {}  # Return an empty dictionary in case of an error
     else:
         return {}
+    
+def downloadAndZipSession_cleanTrialsOnly(session_id,clean_trials_list,deleteFolderWhenZipped=True,isDocker=True,
+                          writeToDjango=False,justDownload=False,data_dir=None,
+                          useSubjectNameFolder=False,
+                          include_pose_pickles=False):
+    
+    session = getSessionJson(session_id)
+    
+    if data_dir is None:
+        data_dir = os.path.join(getDataDirectory(isDocker=isDocker),'Data')
+    if useSubjectNameFolder:
+        folderName = session['name']
+    else:
+        folderName = session_id
+    session_path = os.path.join(data_dir,folderName)
+    
+    calib_id = getCalibrationTrialID(session_id)
+    neutral_id = getNeutralTrialID(session_id)
+    
+    # only keep dynamic_ids that are clean trials 
+    dynamic_ids = [t['id'] for t in session['trials'] if (t['name'] != 'calibration' and t['name'] !='neutral') and t['name'] in clean_trials_list]
+
+    # Calibration
+    downloadVideosFromServer(session_id,calib_id,isDocker=isDocker,
+                         isCalibration=True,isStaticPose=False) 
+    getCalibration(session_id,session_path)
+    
+    # Neutral
+    getModelAndMetadata(session_id,session_path)
+    getMotionData(neutral_id,session_path,include_pose_pickles=include_pose_pickles)
+    downloadVideosFromServer(session_id,neutral_id,isDocker=isDocker,
+                     isCalibration=False,isStaticPose=True,session_path=session_path)
+    getSyncdVideos(neutral_id,session_path)
+
+    # Dynamic
+    for dynamic_id in dynamic_ids:
+        getMotionData(dynamic_id,session_path,include_pose_pickles=include_pose_pickles)
+        downloadVideosFromServer(session_id,dynamic_id,isDocker=isDocker,
+                 isCalibration=False,isStaticPose=False,session_path=session_path)
+        getSyncdVideos(dynamic_id,session_path)
+
+   
+    if not justDownload:
+        # Zip   
+        def zipdir(path, ziph):
+            # ziph is zipfile handle
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    ziph.write(os.path.join(root, file), 
+                               os.path.relpath(os.path.join(root, file), 
+                                               os.path.join(path, '..')))
+        
+        session_zip = '{}.zip'.format(session_path)
+    
+        if os.path.isfile(session_zip):
+            os.remove(session_zip)
+      
+        zipf = zipfile.ZipFile(session_zip, 'w', zipfile.ZIP_DEFLATED)
+        zipdir(session_path, zipf)
+        zipf.close()
+        
+        # write zip as a result to last trial for now
+        if writeToDjango:
+            postFileToTrial(session_zip,dynamic_ids[-1],tag='session_zip',device_id='all')
+        
+        if deleteFolderWhenZipped:
+            if os.path.exists(session_path):
+                shutil.rmtree(session_path)
+            if os.path.exists(session_zip):
+                os.remove(session_zip)
+    
+    return
         
 def downloadAndZipSession(session_id,deleteFolderWhenZipped=True,isDocker=True,
                           writeToDjango=False,justDownload=False,data_dir=None,
