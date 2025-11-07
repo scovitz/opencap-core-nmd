@@ -58,22 +58,24 @@ import subprocess
 # Local path to download sessions to
 #downloadFolder = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','Data'))
 
-downloadFolder = '/Users/sydneycovitz/CLEAN_NMD_DS/'
+downloadFolder = '/Users/yanw/NMD_OpenCap/cs230_NMD/CLEAN_NMD_DS/'
 
-trial_df = pd.read_csv('/Users/sydneycovitz/NMD_OpenCap/csvs/trial_info_latest.csv')
+trial_df = pd.read_csv('/Users/yanw/NMD_OpenCap/cs230_NMD/trial_info_latest.csv')
+trial_df = trial_df.iloc[slice(0, 200, None), slice(None, None, None)]  # for testing, limit to first 200 rows
 
 # build clean_trials dictionary
 clean_sids = []
 clean_rows = []
 for row in range(len(trial_df)):
-    if not pd.isna(trial_df.loc[row, "trial_clean"]):
-        if 'test' not in trial_df.loc[row, 'pid'] and 'Test' not in trial_df.loc[row, 'pid']:
-            if 'noID' not in trial_df.loc[row, 'pid'] and 'noDIGBI' not in trial_df.loc[row, 'pid']:
-                clean_rows.append(trial_df.loc[row])
-                clean_sids.append(trial_df.loc[row, 'sid'])
+        if not pd.isna(trial_df.loc[row, "trial_clean"]):
+            if '5xsts' in trial_df.loc[row, 'trial_clean']:        #IMPORTANT: specify which one trial task to extract from trial_clean column
+                if 'test' not in trial_df.loc[row, 'pid'] and 'Test' not in trial_df.loc[row, 'pid']:
+                    if 'noID' not in trial_df.loc[row, 'pid'] and 'noDIGBI' not in trial_df.loc[row, 'pid']:
+                        clean_rows.append(trial_df.loc[row])
+                        clean_sids.append(trial_df.loc[row, 'sid'])
 
 clean_df = pd.DataFrame(clean_rows)
-
+print(clean_df)
 clean_sids_trials = clean_df.groupby("sid")["trial"].apply(list).to_dict()
 
 session_ids = set(clean_sids)
@@ -84,7 +86,7 @@ useSubjectIdentifierAsFolderName = False
 # %% Processing
 
 def download_one(session_id):
-    if not Path('/Users/sydneycovitz/CLEAN_NMD_DS/' + session_id).exists():
+    if not Path('/Users/yanw/NMD_OpenCap/cs230_NMD/CLEAN_NMD_DS/' + session_id).exists():
         print(f'Downloading session id {session_id}')
         try:
             utils.downloadAndZipSession_cleanTrialsOnly(session_id, clean_sids_trials[session_id], justDownload=True, data_dir=downloadFolder,
