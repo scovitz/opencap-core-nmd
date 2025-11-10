@@ -33,13 +33,14 @@ you run the script.
 import sys
 import os
 import time
-sys.path.append(os.path.abspath('./..'))
-import utils
+preferred_utils_path = os.path.abspath('Users/yanw/opencap-core-nmd/')  # Adjust this path to your opencap-core-nmd directory
+# Add the preferred path to the beginning of sys.path to prioritize it
+sys.path.insert(0, preferred_utils_path)
+import utils 
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import subprocess
-
 # %% User inputs
 
 # Edited by Sydney Covitz
@@ -124,3 +125,5 @@ print(f" Successfully downloaded {success_count}/{len(session_ids)} sessions.")
 # move session directory into correct format (or reformat later?)
 
 
+
+# %%
