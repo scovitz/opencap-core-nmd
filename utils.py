@@ -1046,6 +1046,8 @@ def downloadAndZipSession_cleanTrialsOnly(session_id,clean_trials_list,deleteFol
     
     session = getSessionJson(session_id)
     
+    # list of clean trials passed in for session
+
     if data_dir is None:
         data_dir = os.path.join(getDataDirectory(isDocker=isDocker),'Data')
     if useSubjectNameFolder:
